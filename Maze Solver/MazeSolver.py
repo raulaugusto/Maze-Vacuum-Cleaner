@@ -1,5 +1,6 @@
 import sys
 import pygame
+from collections import deque
 
 class Maze:
     def __init__(self, grid, start):
@@ -12,17 +13,25 @@ class Agente:
 
 # Define o labirinto, agente e direção dos movimentos
 maze = Maze([
-    [0, 1, 0, 0, -1, 0, 1, 0, 0, -1],
-    [0, -1, 1, 0, 0, 0, -1, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-    [1, -1, 0, 0, 0, 1, -1, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
-    [0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-    [0, -1, 1, 0, 0, 0, -1, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-    [1, -1, 0, 0, 0, 1, -1, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 1, 0, 0]
-], (0, 0))
+    [0, 1, 0, 0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, -1, 0],
+    [0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, -1, 0, 0, 0, 1],
+    [1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0],
+    [0, 0, 1, 0, -1, 0, 0, 1, 0, 1, 0, 0, 0, 0, -1, 0],
+    [0, 1, 0, 0, 1, 0, 1, 0, -1, 0, 1, 0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 1, 1, 0, 0, -1, 0, 0, 1, 1, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, -1, 0],
+    [1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 1, 0, 0],
+    [0, 0, -1, 1, 0, 0, 0, 0, -1, 1, 0, 0, 0, 1, 0, 1],
+    [0, 1, 0, 0, -1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, -1],
+    [0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, -1, 0, 0, 0, 1],
+    [1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0],
+    [0, 0, 1, 0, -1, 0, 0, 1, 0, 1, 0, 0, 0, 0, -1, 0]
+], (7, 7))
+
+
 
 agent = Agente(maze.start)
 
@@ -32,58 +41,70 @@ moveCounter = 0
 
 
 # Recursão/Ação do agente
-def findPath(maze, agente, curr):
+def findPath(maze, agente, start):
+    global moveCounter  # Declara que moveCounter é global
     grid = maze.grid
-    if (curr[0] < 0 or curr[0] >= len(grid) or
-        curr[1] < 0 or curr[1] >= len(grid[0]) or
-        grid[curr[0]][curr[1]] == 1 or
-        grid[curr[0]][curr[1]] == 2):
-        return None
+    queue = deque([(start, [])])
+    visited = set()
 
-    if grid[curr[0]][curr[1]] == -1:
-        path.append(curr)
-        walk(grid)
-        return path
+    while queue:
+        (x, y), path = queue.popleft()
 
-    path.append(curr)
-    grid[curr[0]][curr[1]] = 2  # Marca como visitado
+        if (x, y) in visited:
+            continue
 
-    pygame.event.pump()  # Processa eventos para garantir que a tela atualize
-    draw_maze(screen, maze, False)  # Passa False para visualização normal
-    pygame.display.flip()
+        visited.add((x, y))
+        path = path + [(x, y)]
 
-    for dir in dirs:
-        next_step = (curr[0] + dir[0], curr[1] + dir[1])
-        result = findPath(maze, agente, next_step)
-        if result:
-            return result
+        if grid[x][y] == -1:
+            walk(grid, path)
 
-    if len(path) > 0:
-        path.pop()
-    else:
-        return None
+        grid[x][y] = 2  # Marca como visitado
+
+        pygame.event.pump()  # Processa eventos para garantir que a tela atualize
+        draw_maze(screen, maze, False)  # Passa False para visualização normal
+        pygame.display.flip()
+
+        for dir in dirs:
+            nx, ny = x + dir[0], y + dir[1]
+            if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
+                if grid[nx][ny] == 0 or grid[nx][ny] == -1:
+                    queue.append(((nx, ny), path))
+    print(moveCounter)
     return None
 
-def walk(grid):
-    chkPoint = path[len(path) - 1]
+
+def walk(grid, path):
+    global moveCounter  # Declara que moveCounter é global
+    chkPoint = path[-1]  # último ponto de sujeira encontrado
     print(path)
     print('chk: ', chkPoint)
+
     for step in path:
-        grid[step[0]][step[1]] = 3
+        moveCounter = moveCounter + 1
+        grid[step[0]][step[1]] = 3  # marca a célula como limpa
         pygame.event.pump()
         draw_maze(screen, maze, False)
         pygame.display.flip()
-        pygame.time.delay(10)
+        pygame.time.delay(0)
         prev = step
-        grid[prev[0]][prev[1]] = 0
-    path.clear()
-    clearVisited()
-    findPath(maze, agent, chkPoint)
+        grid[prev[0]][prev[1]] = 0  # redefine para caminho
+
+    path.clear()  # Limpa o caminho atual
+    clearVisited()  # Limpa células visitadas
+
+    # Verifica se ainda há sujeira no labirinto
+    if any(-1 in row for row in grid):
+        findPath(maze, agent, chkPoint)  # Continua a partir do último ponto
+    else:
+        print("Labirinto limpo!")  # Quando não há mais sujeira
+
 
 def clearVisited():
-    for cell in maze.grid:
-        if maze.grid[cell[0]][cell[1]] == 2:
-            maze.grid[cell[0]][cell[1]] = 0
+    for y in range(len(maze.grid)):
+        for x in range(len(maze.grid[0])):
+            if maze.grid[y][x] == 2:  # Se a célula foi visitada
+                maze.grid[y][x] = 0  # Redefine para caminho
 # Configurações do Pygame
 pygame.init()
 cell_size = 40
@@ -148,7 +169,7 @@ while running:
     if clean:
         font = pygame.font.Font(None, 74)
         text = font.render("Limpo!", True, (0, 255, 0))
-        screen.blit(text, (width // 4, height // 2.5))
+        screen.blit(text, (width // 2.7, height // 2))
 
     pygame.display.flip()
 
