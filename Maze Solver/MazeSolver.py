@@ -31,8 +31,6 @@ maze = Maze([
     [0, 0, 1, 0, -1, 0, 0, 1, 0, 1, 0, 0, 0, 0, -1, 0]
 ], (7, 7))
 
-
-
 agent = Agente(maze.start)
 
 dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]]
@@ -40,7 +38,6 @@ path = []
 moveCounter = 0
 
 
-# Recursão/Ação do agente
 def findPath(maze, agente, start):
     global moveCounter  # Declara que moveCounter é global
     grid = maze.grid
@@ -86,9 +83,19 @@ def walk(grid, path):
         pygame.event.pump()
         draw_maze(screen, maze, False)
         pygame.display.flip()
-        pygame.time.delay(0)
+        pygame.time.delay(180)
         prev = step
         grid[prev[0]][prev[1]] = 0  # redefine para caminho
+
+        # Verifica se o contador de movimentos atingiu 30
+        if moveCounter >= 30:
+            # Move o agente de volta ao início
+            agent.position = maze.start
+            grid = maze.grid  # Reseta o grid para o estado inicial
+            moveCounter = 0  # Reseta o contador de movimentos
+            path.clear()  # Limpa o caminho atual
+            clearVisited()  # Limpa células visitadas
+            return findPath(maze, agent, agent.position)  # Recomeça a busca
 
     path.clear()  # Limpa o caminho atual
     clearVisited()  # Limpa células visitadas
@@ -105,6 +112,7 @@ def clearVisited():
         for x in range(len(maze.grid[0])):
             if maze.grid[y][x] == 2:  # Se a célula foi visitada
                 maze.grid[y][x] = 0  # Redefine para caminho
+
 # Configurações do Pygame
 pygame.init()
 cell_size = 40
@@ -114,10 +122,10 @@ screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Aspirador")
 
 colors = {
-    'wall': (0, 0, 0),
+    'wall': (59, 58, 57),
     'path': (255, 255, 255),
     'start': (235, 207, 52),
-    'dirt': (88, 36, 72),
+    'dirt': (97, 68, 39),
     'visited': (255, 255, 255),
     'clean': (255, 0, 0),
     'agent': (100, 100, 255)
@@ -149,7 +157,10 @@ def draw_maze(screen, maze, clean):
                 elif cell == 3:
                     color = colors['agent']
             pygame.draw.rect(screen, color, (x * cell_size, y * cell_size, cell_size, cell_size))
-
+    # Desenha o contador de movimentos
+    font = pygame.font.Font(None, 36)
+    counter_text = font.render(f"Movimentos: {moveCounter}", True, (68, 219, 108))
+    screen.blit(counter_text, (10, height - 40))
 
 # Roda o programa
 running = True
